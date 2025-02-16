@@ -5,11 +5,11 @@ from tensorflow.keras.models import load_model
 import numpy as np
 
 # Load the trained LSTM model
-model_path = "/mnt/data/lstm_model.h5"
+model_path = "lstm_model.h5"
 model = load_model(model_path)
 
 # Connect to SQLite database
-db_path = "/mnt/data/db.sqlite3"
+db_path = "db.sqlite3"
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 

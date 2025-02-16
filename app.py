@@ -5,20 +5,16 @@ from tensorflow.keras.models import load_model
 import numpy as np
 
 # Load the trained LSTM model
-model_path = "lstm_model.h5"
+model_path = "/mnt/data/lstm_model (1).h5"
 model = load_model(model_path)
 
 # Connect to SQLite database
-db_path = "db.sqlite3"
+db_path = "/mnt/data/db.sqlite3"
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# Fetch stock names and symbols using JOIN
-cursor.execute("""
-    SELECT s.name, f.symbol 
-    FROM Stocks_financialdata f
-    JOIN Stocks_stocks s ON f.symbol = s.symbol;
-""")
+# Fetch stock names and symbols
+cursor.execute("SELECT name, symbol FROM Stocks_stocks;")
 stocks_data = cursor.fetchall()
 conn.close()
 
@@ -50,9 +46,4 @@ st.sidebar.button("Watchlist")
 st.sidebar.button("Help")
 
 st.title("Stock Predictions")
-st.dataframe(
-    stocks_df.style.applymap(
-        lambda x: "background-color: red; color: white" if "Sell" in x 
-        else "background-color: green; color: white"
-    )
-)
+st.dataframe(stocks_df.style.applymap(lambda x: "background-color: red; color: white" if "Sell" in x else "background-color: green; color: white"))

@@ -1,12 +1,7 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
-from tensorflow.keras.models import load_model
 import numpy as np
-
-# Load the trained LSTM model
-model_path = "lstm_model.h5"
-model = load_model(model_path)
+import sqlite3
 
 # Connect to SQLite database
 db_path = "db.sqlite3"
@@ -15,30 +10,25 @@ cursor = conn.cursor()
 
 # Fetch stock names and symbols
 cursor.execute("""
-    SELECT s.name, f.symbol 
+    SELECT s.name, f.symbol, f.ema20, f.ema30, f.ema50, f.ema100, f.ema200 
     FROM Stocks_financialdata f
     JOIN Stocks_stocks s ON f.symbol = s.symbol;
 """)
-
 stocks_data = cursor.fetchall()
 conn.close()
 
 # Convert to DataFrame
-stocks_df = pd.DataFrame(stocks_data, columns=["Stock", "Symbol"])
+stocks_df = pd.DataFrame(stocks_data, columns=["Sector", "Symbol", "EMA 20", "EMA 30", "EMA 50", "EMA 100", "EMA 200"])
 
-# Simulate EMA predictions using LSTM (Dummy example, replace with actual logic)
-def predict_ema(stock_symbol):
-    dummy_input = np.random.rand(1, 10, 1)  # Assuming 10 time steps
-    prediction = model.predict(dummy_input)
-    return "Buy ↑" if prediction[0][0] > 0.5 else "Sell ↓"
+# Function to simulate Buy/Sell predictions
+def predict_ema(value):
+    return "Buy ↑" if value and value > np.random.uniform(0, 1) else "Sell ↓"
 
-# Generate predictions
-stocks_df["EMA 20"] = stocks_df["Symbol"].apply(predict_ema)
-stocks_df["EMA 50"] = stocks_df["Symbol"].apply(predict_ema)
-stocks_df["EMA 100"] = stocks_df["Symbol"].apply(predict_ema)
-stocks_df["EMA 200"] = stocks_df["Symbol"].apply(predict_ema)
+# Apply predictions to EMA columns
+for ema_col in ["EMA 20", "EMA 30", "EMA 50", "EMA 100", "EMA 200"]:
+    stocks_df[ema_col] = stocks_df[ema_col].apply(predict_ema)
 
-# Streamlit UI
+# Streamlit Sidebar
 st.sidebar.title("Stocky AI")
 st.sidebar.button("Home")
 st.sidebar.button("Charts")
@@ -50,5 +40,11 @@ st.sidebar.button("Settings")
 st.sidebar.button("Watchlist")
 st.sidebar.button("Help")
 
+# Main Title
 st.title("Stock Predictions")
-st.dataframe(stocks_df.style.applymap(lambda x: "background-color: red; color: white" if "Sell" in x else "background-color: green; color: white"))
+
+# Apply Conditional Formatting
+def highlight_cells(val):
+    return "background-color: red; color: white" if "Sell" in val else "background-color: green; color: white"
+
+st.dataframe(stocks_df.style.applymap(highlight_cells))

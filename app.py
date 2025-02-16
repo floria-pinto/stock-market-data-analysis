@@ -1,48 +1,60 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import joblib
+import numpy as np
 import tensorflow as tf
+import joblib
 from sklearn.preprocessing import MinMaxScaler
 
-# Load the trained model and scaler
+# Load trained LSTM model and scaler
 model = tf.keras.models.load_model("lstm_model.h5")
 scaler = joblib.load("scaler.pkl")
 
-# UI Title
-st.title("Stock Price Prediction")
+# Sidebar Navigation
+st.sidebar.title("Stocky AI")
+st.sidebar.markdown("### Navigation")
+pages = ["Home", "Charts", "Sectors", "Stocks", "Alerts", "Portfolio", "Settings", "Watchlist", "Help", "About Us"]
+for page in pages:
+    st.sidebar.button(page)
+st.sidebar.button("Logout")
 
-# User input for last 10 closing prices
-st.write("Enter the last 10 closing prices:")
-price_inputs = []
-for i in range(10):
-    price_inputs.append(st.number_input(f"Day {i+1} Price:", min_value=0.0, format="%.2f"))
+# Main Title
+st.title("Stock Sector Predictions")
 
-if st.button("Predict Next Price"):
-    if len(price_inputs) < 10 or any(p == 0 for p in price_inputs):
-        st.error("Please enter valid prices for all 10 days.")
-    else:
-        # Scale input prices
-        scaled_input = scaler.transform(np.array(price_inputs).reshape(-1, 1)).reshape(1, 10, 1)
+# Example Stock Data (Replace with real stock market API or database)
+sectors = [
+    "NIFTY FIN_SERVICE", "NIFTY AUTO", "NIFTY CONSUM", "NIFTY ENERGY", 
+    "NIFTY FMCG", "NIFTY IT", "NIFTY MEDIA", "NIFTY METAL", 
+    "NIFTY PSUBANK", "NIFTY REALTY", "NIFTY SERVICE", "NIFTY LDX", "NIFTY BANK"
+]
 
-        # Predict next price
-        prediction = model.predict(scaled_input)
-        predicted_price = scaler.inverse_transform(prediction)[0][0]
+# Generate random closing prices for demo (Replace with real prices)
+np.random.seed(42)
+closing_prices = np.random.uniform(1500, 2500, len(sectors))
 
-        # Display Prediction
-        st.write(f"Predicted Next Closing Price: **${predicted_price:.2f}**")
+# Predict Next Price using LSTM Model
+def predict_price(price):
+    scaled_input = scaler.transform(np.array([[price]]))
+    prediction = model.predict(np.array([scaled_input]))
+    predicted_price = scaler.inverse_transform(prediction)
+    return predicted_price[0][0]
 
-        # Generate Buy/Sell Signal
-        signal = "Buy 📈" if predicted_price > price_inputs[-1] else "Sell 📉"
-        st.write(f"**Signal:** {signal}")
+# Create DataFrame with Buy/Sell signals
+data = []
+for sector, price in zip(sectors, closing_prices):
+    pred_price = predict_price(price)
+    ema_20 = "Buy ↑" if pred_price > price else "Sell ↓"
+    ema_50 = "Buy ↑" if pred_price > price * 1.02 else "Sell ↓"
+    ema_100 = "Buy ↑" if pred_price > price * 1.05 else "Sell ↓"
+    ema_200 = "Buy ↑" if pred_price > price * 1.10 else "Sell ↓"
+    data.append([sector, ema_20, ema_50, ema_100, ema_200])
 
-        # Plot the stock trend
-        plt.figure(figsize=(8, 4))
-        plt.plot(range(1, 11), price_inputs, marker="o", linestyle="-", label="Actual Prices")
-        plt.plot(11, predicted_price, marker="*", markersize=12, color="red", label="Predicted Price")
-        plt.xlabel("Days")
-        plt.ylabel("Price ($)")
-        plt.title("Stock Price Prediction")
-        plt.legend()
-        st.pyplot(plt)
+df = pd.DataFrame(data, columns=["Sector", "EMA 20", "EMA 50", "EMA 100", "EMA 200"])
+
+# Apply Color Formatting
+def color_ema(val):
+    return "background-color: green; color: white" if "Buy" in val else "background-color: red; color: white"
+
+styled_df = df.style.applymap(color_ema, subset=["EMA 20", "EMA 50", "EMA 100", "EMA 200"])
+
+# Display Table
+st.dataframe(styled_df, height=600, width=800)

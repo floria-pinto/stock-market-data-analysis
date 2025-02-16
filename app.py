@@ -14,7 +14,7 @@ conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # Fetch stock names and symbols
-cursor.execute("SELECT name, symbol FROM Stocks_stocks;")
+cursor.execute("SELECT name, symbol FROM Stocks_financialdata;")
 stocks_data = cursor.fetchall()
 conn.close()
 

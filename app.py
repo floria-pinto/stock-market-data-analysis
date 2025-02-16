@@ -13,7 +13,7 @@ db_path = "db.sqlite3"
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# Fetch stock names and symbols
+# Fetch stock names and symbols using JOIN
 cursor.execute("""
     SELECT s.name, f.symbol 
     FROM Stocks_financialdata f
@@ -50,4 +50,9 @@ st.sidebar.button("Watchlist")
 st.sidebar.button("Help")
 
 st.title("Stock Predictions")
-st.dataframe(stocks_df.style.applymap(lambda x: "background-color: red; color: white" if "Sell" in x else "background-color: green; color: white"))
+st.dataframe(
+    stocks_df.style.applymap(
+        lambda x: "background-color: red; color: white" if "Sell" in x 
+        else "background-color: green; color: white"
+    )
+)
